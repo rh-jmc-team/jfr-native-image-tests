@@ -38,7 +38,7 @@ import java.util.HashMap;
 public class Tester
 {
     public static final long MS_TOLERANCE = 10;
-    static HashMap<String,Test> tests = new HashMap<>();
+    static HashMap<String,Test> tests = new HashMap<>();// use hashtable in case we want to add ability to run specific tests only
     static Boolean all = true;
     public static void main( String[] args ) throws Exception {
         if (args.length > 0) {
@@ -67,6 +67,7 @@ public class Tester
      */
     private static void loadTests() {
         tests.put("TestThreadPark", new TestThreadPark());
+        tests.put("TestJavaMonitorEnter", new com.redhat.ni.events.TestJavaMonitorEnter());
     }
 
     public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
@@ -85,5 +86,9 @@ public class Tester
     public static boolean isEqualDuration(Duration d1, Duration d2) throws Exception {
         return d1.minus(d2).abs().compareTo(Duration.ofMillis(MS_TOLERANCE)) < 0;
 
+    }
+
+    public static boolean isGreaterDuration(Duration smaller, Duration larger) throws Exception {
+        return smaller.minus(larger.plus(Duration.ofMillis(MS_TOLERANCE))).isNegative(); // True if 'larger' really is bigger
     }
 }

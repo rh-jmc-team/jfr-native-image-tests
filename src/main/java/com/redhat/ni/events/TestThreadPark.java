@@ -28,6 +28,8 @@ import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedObject;
 import jdk.jfr.consumer.RecordingFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
@@ -50,14 +52,14 @@ public class TestThreadPark implements Test {
         try {
             recording.start();
 
-            LockSupport.parkNanos(1000 * 1000000);
-            LockSupport.parkNanos(blocker, 1000*1000000);
-            LockSupport.parkUntil(System.currentTimeMillis() + 1000);
+            LockSupport.parkNanos(500 * 1000000);
+            LockSupport.parkNanos(blocker, 500*1000000);
+            LockSupport.parkUntil(System.currentTimeMillis() + 500);
 
             Thread mainThread = Thread.currentThread();
             Runnable unparker = () -> {
                 try {
-                    Thread.sleep(1500);
+                    Thread.sleep(1000);
                     LockSupport.unpark(mainThread);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -75,14 +77,15 @@ public class TestThreadPark implements Test {
         } finally {
             recording.stop();
         }
-
-        List<RecordedEvent> events = RecordingFile.readAllEvents(makeCopy(recording));
+        Path p = makeCopy(recording);
+        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
+        Files.deleteIfExists(p);
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (event.getEventType().getName().equals("jdk.ThreadPark")) {
 
-                if (Tester.isEqualDuration(event.getDuration(), Duration.ofSeconds(1))) {
-                    if (!struct.<Long>getValue("timeout").equals(new Long(1000*1000000))) {
+                if (Tester.isEqualDuration(event.getDuration(), Duration.ofMillis(500))) {
+                    if (!struct.<Long>getValue("timeout").equals(new Long(500*1000000))) {
                         if (struct.<Long>getValue("timeout") < 0) {
                             parkUntilFound = true;
                         }
@@ -113,11 +116,10 @@ public class TestThreadPark implements Test {
         if (!parkUnparkFound){
             throw new Exception("parkUnparkFound false");
         }
-
     }
 
     @Override
     public String getName(){
-        return "thread park test";
+        return "jdk.ThreadPark";
     }
 }
