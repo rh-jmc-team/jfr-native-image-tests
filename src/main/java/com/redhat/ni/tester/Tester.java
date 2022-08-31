@@ -1,5 +1,25 @@
-package com.redhat.ni.tester;
+/*
+ * Copyright (c) 2022, Red Hat, Inc.
+ *
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This file is part of the Red Hat GraalVM Testing Suite (the suite).
+ *
+ * The suite is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ * The suite is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the suite.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
+package com.redhat.ni.tester;
 
 import com.redhat.ni.events.TestThreadPark;
 import com.redhat.ni.tester.Test;
@@ -9,9 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * This is the class that loads and launches all the tests.
@@ -40,6 +58,8 @@ public class Tester
                 }
             }
         }
+
+        System.out.println("If there were no exceptions, all tests PASSED.");
     }
 
     /**
