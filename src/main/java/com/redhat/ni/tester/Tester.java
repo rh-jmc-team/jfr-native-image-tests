@@ -21,14 +21,17 @@
 
 package com.redhat.ni.tester;
 
+import com.redhat.ni.events.TestJavaMonitorWait;
 import com.redhat.ni.events.TestThreadPark;
 import com.redhat.ni.tester.Test;
 import jdk.jfr.Recording;
+import jdk.jfr.consumer.RecordedEvent;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.HashMap;
 
 /**
@@ -68,6 +71,7 @@ public class Tester
     private static void loadTests() {
         tests.put("TestThreadPark", new TestThreadPark());
         tests.put("TestJavaMonitorEnter", new com.redhat.ni.events.TestJavaMonitorEnter());
+        tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
     }
 
     public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
@@ -90,5 +94,12 @@ public class Tester
 
     public static boolean isGreaterDuration(Duration smaller, Duration larger) throws Exception {
         return smaller.minus(larger.plus(Duration.ofMillis(MS_TOLERANCE))).isNegative(); // True if 'larger' really is bigger
+    }
+
+    public static class ChronologicalComparator implements Comparator<RecordedEvent> {
+        @Override
+        public int compare(RecordedEvent e1, RecordedEvent e2) {
+            return e1.getStartTime().compareTo(e2.getStartTime());
+        }
     }
 }
