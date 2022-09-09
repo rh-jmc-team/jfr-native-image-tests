@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.redhat.ni.tester.Tester.makeCopy;
+import static java.lang.Math.abs;
 
 public class TestJavaMonitorWait implements com.redhat.ni.tester.Test{
     private static final int MILLIS = 50;
@@ -70,46 +71,49 @@ public class TestJavaMonitorWait implements com.redhat.ni.tester.Test{
         Long lastTid = null; //should alternate if buffer is 1
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
-                if (com.redhat.ni.tester.Tester.isEqualDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
-                    //check which thread emitted the event
-                    Long eventThread = struct.<RecordedThread>getValue("eventThread").getId();
-                    Long notifThread = struct.<RecordedThread>getValue("notifier").getId();
-                    if (!struct.<RecordedClass>getValue("monitorClass").getName().equals("com.redhat.ni.events.TestJavaMonitorWait$Helper") &&
-                            (eventThread.equals(consTid) ||eventThread.equals(prodTid))) {
-                        throw new Exception("Wrong monitor class.");
-                    }
-                    if (struct.<Boolean>getValue("timedOut")) {
-                        throw new Exception("Should not have timed out.");
-                    }
+            if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
+            continue;
+            }
+            if (!com.redhat.ni.tester.Tester.isEqualDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+                continue;
+            }
+            //check which thread emitted the event
+            Long eventThread = struct.<RecordedThread>getValue("eventThread").getId();
+            Long notifThread = struct.<RecordedThread>getValue("notifier").getId();
+            if (!struct.<RecordedClass>getValue("monitorClass").getName().equals("com.redhat.ni.events.TestJavaMonitorWait$Helper") &&
+                    (eventThread.equals(consTid) ||eventThread.equals(prodTid))) {
+                throw new Exception("Wrong monitor class.");
+            }
+            if (struct.<Boolean>getValue("timedOut").booleanValue()) {
+                throw new Exception("Should not have timed out.");
+            }
 
-                    if (prodTid == null) {
-                        prodTid = eventThread;
-                        consTid = notifThread;
-                        lastTid = notifThread;
-                    }
-                    if (!lastTid.equals(notifThread)) {
-                        throw new Exception("Not alternating");
-                    }
-                    if (eventThread.equals(prodTid)) {
-                        prodCount++;
-                        if (!notifThread.equals(consTid)) {
-                            throw new Exception("Wrong notifier");
-                        }
-
-                    } else if (eventThread.equals(consTid)) {
-                        consCount++;
-                        if (!notifThread.equals(prodTid)) {
-                            throw new Exception("Wrong notifier");
-                        }
-                    }
-                    lastTid = eventThread;
+            if (prodTid == null) {
+                prodTid = eventThread;
+                consTid = notifThread;
+                lastTid = notifThread;
+            }
+            if (!lastTid.equals(notifThread)) {
+                throw new Exception("Not alternating");
+            }
+            if (eventThread.equals(prodTid)) {
+                prodCount++;
+                if (!notifThread.equals(consTid)) {
+                    throw new Exception("Wrong notifier");
                 }
 
+            } else if (eventThread.equals(consTid)) {
+                consCount++;
+                if (!notifThread.equals(prodTid)) {
+                    throw new Exception("Wrong notifier");
+                }
             }
+            lastTid = eventThread;
         }
-        if (prodCount !=(consCount) || consCount !=COUNT-1) {
-            throw new Exception("Wrong number of events");
+
+
+        if (abs(prodCount - consCount) > 1 || abs(consCount-COUNT) >1) {
+            throw new Exception("Wrong number of events: "+prodCount + " "+consCount);
         }
 
     }

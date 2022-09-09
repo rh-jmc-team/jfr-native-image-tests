@@ -22,6 +22,7 @@
 package com.redhat.ni.tester;
 
 import com.redhat.ni.events.TestJavaMonitorWait;
+import com.redhat.ni.events.TestJavaMonitorWaitInterrupt;
 import com.redhat.ni.events.TestThreadPark;
 import com.redhat.ni.tester.Test;
 import jdk.jfr.Recording;
@@ -72,6 +73,7 @@ public class Tester
         tests.put("TestThreadPark", new TestThreadPark());
         tests.put("TestJavaMonitorEnter", new com.redhat.ni.events.TestJavaMonitorEnter());
         tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
+        tests.put("TestJavaMonitorWaitInterrupt", new TestJavaMonitorWaitInterrupt());
     }
 
     public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
