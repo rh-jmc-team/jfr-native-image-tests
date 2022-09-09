@@ -26,15 +26,9 @@ import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedObject;
 import jdk.jfr.consumer.RecordedThread;
-import jdk.jfr.consumer.RecordingFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-
-import static com.redhat.ni.tester.Tester.makeCopy;
 
 public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
     private static final int MILLIS = 50;
@@ -120,10 +114,7 @@ public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
             recording.stop();
         }
 
-        Path p = makeCopy(recording);
-        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Tester.sortEvents(events);
-        Files.deleteIfExists(p);
+        List<RecordedEvent> events = Tester.getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {

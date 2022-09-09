@@ -26,15 +26,11 @@ import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
 
 import jdk.jfr.consumer.RecordedObject;
-import jdk.jfr.consumer.RecordingFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 import com.redhat.ni.tester.Tester;
-import static com.redhat.ni.tester.Tester.makeCopy;
 
 public class TestThreadPark implements Test {
 
@@ -77,9 +73,8 @@ public class TestThreadPark implements Test {
         } finally {
             recording.stop();
         }
-        Path p = makeCopy(recording);
-        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Files.deleteIfExists(p);
+
+        List<RecordedEvent> events = Tester.getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (event.getEventType().getName().equals("jdk.ThreadPark")) {

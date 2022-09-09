@@ -1,21 +1,16 @@
 package com.redhat.ni.events;
 
 import jdk.jfr.Recording;
-import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedObject;
-import jdk.jfr.consumer.RecordingFile;
 import main.java.com.redhat.ni.tester.Stressor;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.redhat.ni.tester.Tester.MS_TOLERANCE;
-import static com.redhat.ni.tester.Tester.makeCopy;
 import static java.lang.Math.abs;
 
 public class TestJavaMonitorEnter implements com.redhat.ni.tester.Test {
@@ -50,9 +45,7 @@ public class TestJavaMonitorEnter implements com.redhat.ni.tester.Test {
             recording.stop();
         }
 
-        Path p = makeCopy(recording);
-        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Files.deleteIfExists(p);
+        List<RecordedEvent> events = com.redhat.ni.tester.Tester.getEvents(recording, getName());
         int count = 0;
         List<Long> durations = new ArrayList<>();
         for (RecordedEvent event : events) {

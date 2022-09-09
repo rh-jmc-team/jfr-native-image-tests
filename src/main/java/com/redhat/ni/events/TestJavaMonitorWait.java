@@ -25,13 +25,9 @@ import com.redhat.ni.tester.Tester;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.*;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 
-import static com.redhat.ni.tester.Tester.makeCopy;
 import static java.lang.Math.abs;
 
 public class TestJavaMonitorWait implements com.redhat.ni.tester.Test{
@@ -81,10 +77,7 @@ public class TestJavaMonitorWait implements com.redhat.ni.tester.Test{
             recording.stop();
         }
 
-        Path p = makeCopy(recording);
-        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Tester.sortEvents(events);
-        Files.deleteIfExists(p);
+        List<RecordedEvent> events = Tester.getEvents(recording, getName());
         int prodCount = 0;
         int consCount = 0;
         Long prodTid = null;

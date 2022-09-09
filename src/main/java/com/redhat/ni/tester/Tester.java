@@ -27,12 +27,14 @@ import com.redhat.ni.events.TestThreadPark;
 import com.redhat.ni.events.TestJavaMonitorEnter;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
+import jdk.jfr.consumer.RecordingFile;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitTimeout;
 import main.java.com.redhat.ni.events.TestThreadSleep;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
@@ -85,14 +87,11 @@ public class Tester
         tests.put("TestThreadSleep", new TestThreadSleep());
     }
 
-    public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
+    private static Path makeCopy(Recording recording, String testName) throws IOException { // from jdk 19
         Path p = recording.getDestination();
         if (p == null) {
             File directory = new File(".");
-            // FIXME: Must come up with a way to give human-readable name
-            // this will at least not clash when running parallel.
-            ProcessHandle h = ProcessHandle.current();
-            p = new File(directory.getAbsolutePath(), "recording-" + recording.getId() + "-pid" + h.pid() + ".jfr").toPath();
+            p = new File(directory.getAbsolutePath(), "recording-" + recording.getId() + "-" + testName+ ".jfr").toPath();
             recording.dump(p);
         }
         return p;
@@ -116,7 +115,11 @@ public class Tester
         }
     }
 
-    public static void sortEvents(List<RecordedEvent> events) {
+    public static List<RecordedEvent> getEvents(Recording recording, String testName) throws IOException {
+        Path p = makeCopy(recording, testName);
+        List<RecordedEvent> events = RecordingFile.readAllEvents(p);
         Collections.sort(events, chronologicalComparator);
+        Files.deleteIfExists(p);
+        return events;
     }
 }
