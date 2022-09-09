@@ -24,17 +24,21 @@ package com.redhat.ni.tester;
 import com.redhat.ni.events.TestJavaMonitorWait;
 import com.redhat.ni.events.TestJavaMonitorWaitInterrupt;
 import com.redhat.ni.events.TestThreadPark;
+import com.redhat.ni.events.TestJavaMonitorEnter;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitTimeout;
+import main.java.com.redhat.ni.events.TestThreadSleep;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * This is the class that loads and launches all the tests.
@@ -44,6 +48,7 @@ public class Tester
 {
     public static final long MS_TOLERANCE = 10;
     static HashMap<String,Test> tests = new HashMap<>();// use hashtable in case we want to add ability to run specific tests only
+    private static ChronologicalComparator chronologicalComparator = new Tester.ChronologicalComparator();
     static Boolean all = true;
     public static void main( String[] args ) throws Exception {
         if (args.length > 0) {
@@ -72,11 +77,12 @@ public class Tester
      */
     private static void loadTests() {
         tests.put("TestThreadPark", new TestThreadPark());
-        tests.put("TestJavaMonitorEnter", new com.redhat.ni.events.TestJavaMonitorEnter());
+        tests.put("TestJavaMonitorEnter", new TestJavaMonitorEnter());
         tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
         tests.put("TestJavaMonitorWaitInterrupt", new TestJavaMonitorWaitInterrupt());
         tests.put("TestJavaMonitorWaitNotifyAll", new TestJavaMonitorWaitNotifyAll());
         tests.put("TestJavaMonitorWaitTimeout", new TestJavaMonitorWaitTimeout());
+        tests.put("TestThreadSleep", new TestThreadSleep());
     }
 
     public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
@@ -92,19 +98,25 @@ public class Tester
         return p;
     }
 
-    public static boolean isEqualDuration(Duration d1, Duration d2) throws Exception {
+    /** Used for comparing durations with a tolerance of MS_TOLERANCE */
+    public static boolean isEqualDuration(Duration d1, Duration d2) {
         return d1.minus(d2).abs().compareTo(Duration.ofMillis(MS_TOLERANCE)) < 0;
 
     }
 
-    public static boolean isGreaterDuration(Duration smaller, Duration larger) throws Exception {
-        return smaller.minus(larger.plus(Duration.ofMillis(MS_TOLERANCE))).isNegative(); // True if 'larger' really is bigger
+    /** Used for comparing durations with a tolerance of MS_TOLERANCE. True if 'larger' really is bigger */
+    public static boolean isGreaterDuration(Duration smaller, Duration larger) {
+        return smaller.minus(larger.plus(Duration.ofMillis(MS_TOLERANCE))).isNegative();
     }
 
-    public static class ChronologicalComparator implements Comparator<RecordedEvent> {
+    private static class ChronologicalComparator implements Comparator<RecordedEvent> {
         @Override
         public int compare(RecordedEvent e1, RecordedEvent e2) {
             return e1.getStartTime().compareTo(e2.getStartTime());
         }
+    }
+
+    public static void sortEvents(List<RecordedEvent> events) {
+        Collections.sort(events, chronologicalComparator);
     }
 }

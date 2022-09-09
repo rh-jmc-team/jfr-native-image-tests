@@ -122,7 +122,7 @@ public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
 
         Path p = makeCopy(recording);
         List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Collections.sort(events, new Tester.ChronologicalComparator());
+        Tester.sortEvents(events);
         Files.deleteIfExists(p);
         for (RecordedEvent event : events) {
             RecordedObject struct = event;

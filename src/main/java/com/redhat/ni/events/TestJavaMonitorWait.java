@@ -83,7 +83,7 @@ public class TestJavaMonitorWait implements com.redhat.ni.tester.Test{
 
         Path p = makeCopy(recording);
         List<RecordedEvent> events = RecordingFile.readAllEvents(p);
-        Collections.sort(events, new Tester.ChronologicalComparator());
+        Tester.sortEvents(events);
         Files.deleteIfExists(p);
         int prodCount = 0;
         int consCount = 0;
