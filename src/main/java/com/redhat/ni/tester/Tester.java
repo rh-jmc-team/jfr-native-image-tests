@@ -24,7 +24,6 @@ package com.redhat.ni.tester;
 import com.redhat.ni.events.TestJavaMonitorWait;
 import com.redhat.ni.events.TestJavaMonitorWaitInterrupt;
 import com.redhat.ni.events.TestThreadPark;
-import com.redhat.ni.tester.Test;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
