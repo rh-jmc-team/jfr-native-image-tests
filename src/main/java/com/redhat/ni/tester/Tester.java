@@ -27,6 +27,7 @@ import com.redhat.ni.events.TestThreadPark;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
+import main.java.com.redhat.ni.events.TestJavaMonitorWaitTimeout;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +76,7 @@ public class Tester
         tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
         tests.put("TestJavaMonitorWaitInterrupt", new TestJavaMonitorWaitInterrupt());
         tests.put("TestJavaMonitorWaitNotifyAll", new TestJavaMonitorWaitNotifyAll());
+        tests.put("TestJavaMonitorWaitTimeout", new TestJavaMonitorWaitTimeout());
     }
 
     public static Path makeCopy(Recording recording) throws IOException { // from jdk 19
