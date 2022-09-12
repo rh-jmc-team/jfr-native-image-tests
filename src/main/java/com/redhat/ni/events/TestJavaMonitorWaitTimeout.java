@@ -24,6 +24,7 @@ package main.java.com.redhat.ni.events;
 import com.redhat.ni.tester.Test;
 import com.redhat.ni.tester.Tester;
 import jdk.jfr.Recording;
+import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedObject;
 import jdk.jfr.consumer.RecordedThread;
@@ -129,12 +130,15 @@ public class TestJavaMonitorWaitTimeout extends Test {
                     !eventThread.equals(simpleWaitName)) {
                 continue;
             }
+            if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
+                continue;
+            }
             if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                 throw new Exception("Event is wrong duration.");
             }
             if (eventThread.equals(timeOutName)) {
                 if (notifThread != null) {
-                    throw new Exception("Notifier of interrupted thread should be null");
+                    throw new Exception("Notifier of timeout thread should be null");
                 }
                 if (!struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should have timed out.");

@@ -56,7 +56,7 @@ public class TestThreadSleep extends Test {
             }
             RecordedObject struct = event;
             String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
-            if (!eventThread.equals(sleepingThreadName) && !event.getEventType().getName().equals("jdk.ThreadSleep")) {
+            if (!eventThread.equals(sleepingThreadName)) {
                 continue;
             }
             if (!isEqualDuration(event.getDuration(), Duration.ofMillis(MILLIS))) {

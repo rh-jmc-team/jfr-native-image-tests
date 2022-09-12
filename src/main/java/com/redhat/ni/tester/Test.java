@@ -71,7 +71,7 @@ public class Test {
     private class ChronologicalComparator implements Comparator<RecordedEvent> {
         @Override
         public int compare(RecordedEvent e1, RecordedEvent e2) {
-            return e1.getStartTime().compareTo(e2.getStartTime());
+            return e1.getEndTime().compareTo(e2.getEndTime());
         }
     }
 
