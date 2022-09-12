@@ -21,6 +21,7 @@
 
 package main.java.com.redhat.ni.events;
 
+import com.redhat.ni.tester.Test;
 import com.redhat.ni.tester.Tester;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
@@ -30,7 +31,7 @@ import jdk.jfr.consumer.RecordedThread;
 import java.time.Duration;
 import java.util.List;
 
-public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
+public class TestJavaMonitorWaitTimeout extends Test {
     private static final int MILLIS = 50;
     static Helper helper = new Helper();
     static String timeOutName;
@@ -114,7 +115,7 @@ public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
             recording.stop();
         }
 
-        List<RecordedEvent> events = Tester.getEvents(recording, getName());
+        List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
@@ -128,7 +129,7 @@ public class TestJavaMonitorWaitTimeout implements com.redhat.ni.tester.Test{
                     !eventThread.equals(simpleWaitName)) {
                 continue;
             }
-            if (!com.redhat.ni.tester.Tester.isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+            if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                 throw new Exception("Event is wrong duration.");
             }
             if (eventThread.equals(timeOutName)) {

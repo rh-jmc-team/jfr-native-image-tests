@@ -30,9 +30,7 @@ import jdk.jfr.consumer.RecordedObject;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
-import com.redhat.ni.tester.Tester;
-
-public class TestThreadPark implements Test {
+public class TestThreadPark extends Test {
 
     class Blocker {
     }
@@ -74,12 +72,12 @@ public class TestThreadPark implements Test {
             recording.stop();
         }
 
-        List<RecordedEvent> events = Tester.getEvents(recording, getName());
+        List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (event.getEventType().getName().equals("jdk.ThreadPark")) {
 
-                if (Tester.isEqualDuration(event.getDuration(), Duration.ofMillis(500))) {
+                if (isEqualDuration(event.getDuration(), Duration.ofMillis(500))) {
                     if (!struct.<Long>getValue("timeout").equals(new Long(500*1000000))) {
                         if (struct.<Long>getValue("timeout") < 0) {
                             parkUntilFound = true;

@@ -22,14 +22,13 @@
 package main.java.com.redhat.ni.events;
 
 import com.redhat.ni.tester.Test;
-import com.redhat.ni.tester.Tester;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.*;
 
 import java.time.Duration;
 import java.util.List;
 
-public class TestThreadSleep implements Test {
+public class TestThreadSleep extends Test {
     private static final int MILLIS = 50;
     static String sleepingThreadName;
 
@@ -49,19 +48,19 @@ public class TestThreadSleep implements Test {
         } finally {
             recording.stop();
         }
-        List<RecordedEvent> events = Tester.getEvents(recording, getName());
+        List<RecordedEvent> events = getEvents(recording, getName());
         boolean foundSleepEvent = false;
         for (RecordedEvent event : events) {
-            RecordedObject struct = event;
-            String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
-            if (!eventThread.equals(sleepingThreadName)) {
+            if (!event.getEventType().getName().equals("jdk.ThreadSleep")) {
                 continue;
             }
-            if (!event.getEventType().getName().equals("jdk.ThreadSleep")) {
-                throw new Exception("Wrong event type.");
+            RecordedObject struct = event;
+            String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
+            if (!eventThread.equals(sleepingThreadName) && !event.getEventType().getName().equals("jdk.ThreadSleep")) {
+                continue;
             }
-            if (!Tester.isEqualDuration(event.getDuration(), Duration.ofMillis(MILLIS))) {
-                throw new Exception("Slept wrong duration.");
+            if (!isEqualDuration(event.getDuration(), Duration.ofMillis(MILLIS))) {
+                continue;
             }
             foundSleepEvent = true;
             break;

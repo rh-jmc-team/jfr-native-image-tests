@@ -27,8 +27,9 @@ import jdk.jfr.consumer.*;
 
 import java.time.Duration;
 import java.util.List;
+import com.redhat.ni.tester.Test;
 
-public class TestJavaMonitorWaitInterrupt implements com.redhat.ni.tester.Test{
+public class TestJavaMonitorWaitInterrupt extends Test{
     private static final int MILLIS = 50;
     static Helper helper = new Helper();
     static String interruptedName;
@@ -116,7 +117,7 @@ public class TestJavaMonitorWaitInterrupt implements com.redhat.ni.tester.Test{
             recording.stop();
         }
 
-        List<RecordedEvent> events = Tester.getEvents(recording, getName());
+        List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
@@ -130,7 +131,7 @@ public class TestJavaMonitorWaitInterrupt implements com.redhat.ni.tester.Test{
                     !eventThread.equals(simpleWaitName)) {
                 continue;
             }
-            if (!com.redhat.ni.tester.Tester.isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+            if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                 throw new Exception("Event is wrong duration.");
             }
 

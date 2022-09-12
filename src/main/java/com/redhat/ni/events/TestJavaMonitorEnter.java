@@ -9,11 +9,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
-
-import static com.redhat.ni.tester.Tester.MS_TOLERANCE;
+import com.redhat.ni.tester.Test;
 import static java.lang.Math.abs;
 
-public class TestJavaMonitorEnter implements com.redhat.ni.tester.Test {
+public class TestJavaMonitorEnter extends Test {
     private static final int THREADS = 10;
     private static final int MILLIS = 60;
 
@@ -45,13 +44,13 @@ public class TestJavaMonitorEnter implements com.redhat.ni.tester.Test {
             recording.stop();
         }
 
-        List<RecordedEvent> events = com.redhat.ni.tester.Tester.getEvents(recording, getName());
+        List<RecordedEvent> events = getEvents(recording, getName());
         int count = 0;
         List<Long> durations = new ArrayList<>();
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
             if (event.getEventType().getName().equals("jdk.JavaMonitorEnter")) {
-                if (com.redhat.ni.tester.Tester.isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+                if (isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                     durations.add(event.getDuration().toMillis());
                     count++;
                 }
