@@ -39,6 +39,8 @@ public class TestJavaMonitorWaitTimeout extends Test {
     static String notifierName;
     static String simpleWaitName;
     static String simpleNotifyName;
+    private boolean timeoutFound = false;
+    private boolean simpleWaitFound = false;
 
     @Override
     public String getName() {
@@ -84,7 +86,7 @@ public class TestJavaMonitorWaitTimeout extends Test {
             };
             Thread unheardNotifierThread = new Thread(unheardNotifier);
             Thread timeoutThread = new Thread(timouter);
-            timeOutName = unheardNotifierThread.getName();
+            timeOutName = timeoutThread.getName();
             notifierName = unheardNotifierThread.getName();
 
 
@@ -143,12 +145,17 @@ public class TestJavaMonitorWaitTimeout extends Test {
                 if (!struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should have timed out.");
                 }
+                timeoutFound = true;
             } else if (eventThread.equals(simpleWaitName)) {
                 if (!notifThread.equals(simpleNotifyName)) {
                     throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyName);
                 }
+                simpleWaitFound = true;
             }
 
+        }
+        if (!(simpleWaitFound && timeoutFound)) {
+            throw new Exception("Couldn't find expected wait events. SimpleWaiter: "+ simpleWaitFound + " timeout: "+ timeoutFound);
         }
 
     }

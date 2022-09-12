@@ -32,6 +32,8 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
     static String waiterName1;
     static String waiterName2;
     static String notifierName;
+    private boolean notifierFound = false;
+    private int waitersFound = 0;
 
     static Helper helper = new Helper();
 
@@ -99,15 +101,18 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
                     !eventThread.equals(notifierName)) {
                 continue;
             }
+            if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
+                continue;
+            }
             if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                 throw new Exception("Event is wrong duration.");
             }
-
 
             if (eventThread.equals(notifierName)) {
                 if (!struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should have timed out.");
                 }
+                notifierFound = true;
             } else {
                 if (struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should not have timed out.");
@@ -115,7 +120,11 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
                 if (!notifThread.equals(notifierName)) {
                     throw new Exception("Notifier thread name is incorrect");
                 }
+                waitersFound++;
             }
+        }
+        if (!notifierFound || waitersFound < 2) {
+            throw new Exception("Couldn't find expected wait events. NotifierFound: "+ notifierFound + " waitersFound: "+ waitersFound);
         }
     }
 

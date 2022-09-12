@@ -28,6 +28,7 @@ import jdk.jfr.consumer.*;
 import java.time.Duration;
 import java.util.List;
 import com.redhat.ni.tester.Test;
+import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
 
 public class TestJavaMonitorWaitInterrupt extends Test{
     private static final int MILLIS = 50;
@@ -36,6 +37,9 @@ public class TestJavaMonitorWaitInterrupt extends Test{
     static String interrupterName;
     static String simpleWaitName;
     static String simpleNotifyName;
+
+    private boolean interruptedFound = false;
+    private boolean simpleWaitFound = false;
 
     @Override
     public String getName() {
@@ -131,6 +135,9 @@ public class TestJavaMonitorWaitInterrupt extends Test{
                     !eventThread.equals(simpleWaitName)) {
                 continue;
             }
+            if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
+                continue;
+            }
             if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
                 throw new Exception("Event is wrong duration.");
             }
@@ -143,14 +150,19 @@ public class TestJavaMonitorWaitInterrupt extends Test{
                 if (notifThread != null) {
                     throw new Exception("Notifier of interrupted thread should be null");
                 }
+                interruptedFound = true;
             } else if (eventThread.equals(simpleWaitName)) {
                 if (!notifThread.equals(simpleNotifyName)) {
                     throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyName);
                 }
+                simpleWaitFound = true;
             }
         }
-
+        if (!(simpleWaitFound && interruptedFound)) {
+            throw new Exception("Couldn't find expected wait events. SimpleWaiter: "+ simpleWaitFound + " interrupted: "+ interruptedFound);
+        }
     }
+
     static class Helper {
         public Thread interrupted;
         public synchronized void interrupted() throws InterruptedException {
