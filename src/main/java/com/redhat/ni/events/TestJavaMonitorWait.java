@@ -34,7 +34,7 @@ public class TestJavaMonitorWait extends Test{
     private static final int COUNT = 10;
     private static String producerName;
     private static String consumerName;
-    static Helper helper = new Helper();
+    static final Helper helper = new Helper();
 
     @Override
     public String getName() {
@@ -71,9 +71,6 @@ public class TestJavaMonitorWait extends Test{
             tc.start();
             tp.join();
             tc.join();
-
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -87,10 +84,8 @@ public class TestJavaMonitorWait extends Test{
 
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
-            continue;
-            }
-            if (!isEqualDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+
+            if (!(event.getDuration().toMillis() >= MILLIS)) {
                 continue;
             }
             //check which thread emitted the event

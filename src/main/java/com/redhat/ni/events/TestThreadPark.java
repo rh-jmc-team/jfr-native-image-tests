@@ -50,22 +50,16 @@ public class TestThreadPark extends Test {
             LockSupport.parkNanos(blocker, 500*1000000);
             LockSupport.parkUntil(System.currentTimeMillis() + 500);
 
-            Thread mainThread = Thread.currentThread();
-            Runnable unparker = () -> {
-                try {
-                    Thread.sleep(1000);
-                    LockSupport.unpark(mainThread);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+            Runnable waiter = () -> {
+                LockSupport.park();
             };
-            Thread unparkerThread = new Thread(unparker);
-            unparkerThread.start();
-            LockSupport.park();
-            unparkerThread.join();
-
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
+            Thread waiterThread = new Thread(waiter);
+            waiterThread.start();
+            while (!waiterThread.getState().equals(Thread.State.WAITING)) {
+                Thread.sleep(10);
+            }
+            LockSupport.unpark(waiterThread);
+            waiterThread.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -75,27 +69,23 @@ public class TestThreadPark extends Test {
         List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (event.getEventType().getName().equals("jdk.ThreadPark")) {
-
-                if (isEqualDuration(event.getDuration(), Duration.ofMillis(500))) {
-                    if (!struct.<Long>getValue("timeout").equals(new Long(500*1000000))) {
-                        if (struct.<Long>getValue("timeout") < 0) {
-                            parkUntilFound = true;
-                        }
-                    }
-
-                    if (struct.getValue("parkedClass") == null) {
-                        parkNanosFound = true;
-                    } else
-                        if (struct.<RecordedClass>getValue("parkedClass").getName().equals("com.redhat.ni.events.TestThreadPark$Blocker")) {
-                            parkNanosFoundBlocker = true;
-                        }
-                }else {
-                    if (struct.<Long>getValue("timeout") < 0 && struct.<Long>getValue("until") < 0) {
-                        parkUnparkFound = true;
+            if (struct.<Long>getValue("timeout") < 0 && struct.<Long>getValue("until") < 0) {
+                parkUnparkFound = true;
+            } else{
+                if (!(struct.<Long>getValue("timeout").longValue() ==(500 * 1000000))) {
+                    if (struct.<Long>getValue("timeout") < 0) {
+                        parkUntilFound = true;
+                        continue;
                     }
                 }
+                if (struct.getValue("parkedClass") == null) {
+                    parkNanosFound = true;
+                } else
+                    if (struct.<RecordedClass>getValue("parkedClass").getName().equals("com.redhat.ni.events.TestThreadPark$Blocker")) {
+                        parkNanosFoundBlocker = true;
+                    }
             }
+
         }
         if (!parkNanosFound){
             throw new Exception("parkNanosFound false");

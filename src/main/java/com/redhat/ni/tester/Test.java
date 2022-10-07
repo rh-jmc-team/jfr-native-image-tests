@@ -30,13 +30,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 public class Test {
-    public static final long MS_TOLERANCE = 10;
-    private ChronologicalComparator chronologicalComparator = new ChronologicalComparator();
+    private final ChronologicalComparator chronologicalComparator = new ChronologicalComparator();
 
     public void test() throws Exception {
         System.out.println("Test is unimplemented" + this.getClass().getName());
@@ -57,16 +57,6 @@ public class Test {
         return p;
     }
 
-    /** Used for comparing durations with a tolerance of MS_TOLERANCE */
-    protected boolean isEqualDuration(Duration d1, Duration d2) {
-        return d1.minus(d2).abs().compareTo(Duration.ofMillis(MS_TOLERANCE)) < 0;
-
-    }
-
-    /** Used for comparing durations with a tolerance of MS_TOLERANCE. True if 'larger' really is bigger */
-    protected boolean isGreaterDuration(Duration smaller, Duration larger) {
-        return smaller.minus(larger.plus(Duration.ofMillis(MS_TOLERANCE))).isNegative();
-    }
 
     private class ChronologicalComparator implements Comparator<RecordedEvent> {
         @Override
@@ -79,6 +69,8 @@ public class Test {
         Path p = makeCopy(recording, testName);
         List<RecordedEvent> events = RecordingFile.readAllEvents(p);
         Collections.sort(events, chronologicalComparator);
+        // remove events that are not in the list of tested events
+        events.removeIf(event -> (!testName.equals(event.getEventType().getName())));
         Files.deleteIfExists(p);
         return events;
     }

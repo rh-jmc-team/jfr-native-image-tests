@@ -32,18 +32,72 @@ import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
 
 public class TestJavaMonitorWaitInterrupt extends Test{
     private static final int MILLIS = 50;
-    static Helper helper = new Helper();
-    static String interruptedName;
-    static String interrupterName;
-    static String simpleWaitName;
-    static String simpleNotifyName;
+    static final Helper helper = new Helper();
+    static Thread interruptedThread;
+    static Thread interrupterThread;
+    static Thread simpleWaitThread;
+    static Thread simpleNotifyThread;
 
     private boolean interruptedFound = false;
     private boolean simpleWaitFound = false;
 
     @Override
     public String getName() {
-        return "jdk.JavaMonitorWait - Interrupt";
+        return "jdk.JavaMonitorWait";
+    }
+    private static void testInterruption() throws Exception {
+
+        Runnable interrupted = () -> {
+            try {
+                helper.interrupted();
+                throw new RuntimeException("Was not interrupted!!");
+            } catch (InterruptedException e) {
+                // should get interrupted
+            }
+        };
+        interruptedThread = new Thread(interrupted);
+
+        Runnable interrupter = () -> {
+            try {
+                while (!interruptedThread.getState().equals(Thread.State.WAITING)) {
+                    Thread.sleep(10);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
+            helper.interrupt();
+        };
+
+        interrupterThread = new Thread(interrupter);
+        interruptedThread.start();
+        interrupterThread.start();
+        interruptedThread.join();
+        interrupterThread.join();
+    }
+
+    private static void testWaitNotify() throws Exception {
+        Runnable simpleWaiter = () -> {
+            helper.simpleWait();
+        };
+
+        Runnable simpleNotifier = () -> {
+            try {
+                while (!simpleWaitThread.getState().equals(Thread.State.WAITING)) {
+                    Thread.sleep(10);
+                }
+                helper.simpleNotify();
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
+        };
+
+        simpleWaitThread = new Thread(simpleWaiter);
+        simpleNotifyThread = new Thread(simpleNotifier);
+
+        simpleWaitThread.start();
+        simpleNotifyThread.start();
+        simpleWaitThread.join();
+        simpleNotifyThread.join();
     }
     @Override
     public void test() throws Exception {
@@ -53,68 +107,8 @@ public class TestJavaMonitorWaitInterrupt extends Test{
         try {
             recording.start();
 
-            Runnable interrupter = () -> {
-                try {
-                    helper.interrupt();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
-            Runnable interrupted = () -> {
-                try {
-                    helper.interrupted();
-                    throw new RuntimeException("Was not interrupted!!");
-                } catch (InterruptedException e) {
-                    //should get interrupted
-                }
-            };
-
-            Runnable simpleWaiter = () -> {
-                try {
-                    helper.simpleWait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
-            Runnable simpleNotifier = () -> {
-                try {
-                    helper.simpleNotify();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-            Thread interrupterThread = new Thread(interrupter);
-            Thread interruptedThread = new Thread(interrupted);
-            helper.interrupted = interruptedThread;
-            interrupterName = interrupterThread.getName();
-            interruptedName = interruptedThread.getName();
-
-
-
-            interruptedThread.start();
-            Thread.sleep(MILLIS); //pause to ensure expected ordering of lock acquisition
-            interrupterThread.start();
-
-            interruptedThread.join();
-            interrupterThread.join();
-
-            Thread tw = new Thread(simpleWaiter);
-            Thread tn = new Thread(simpleNotifier);
-            simpleWaitName = tw.getName();
-            simpleNotifyName = tn.getName();
-
-
-            tw.start();
-            Thread.sleep(50);
-            tn.start();
-
-            tw.join();
-            tn.join();
-
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
+            testInterruption();
+            testWaitNotify();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -124,21 +118,19 @@ public class TestJavaMonitorWaitInterrupt extends Test{
         List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
-                continue;
-            }
+
             String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
             String notifThread = struct.<RecordedThread>getValue("notifier") != null ? struct.<RecordedThread>getValue("notifier").getJavaName() : null;
-            if (!eventThread.equals(interrupterName) &&
-                    !eventThread.equals(interruptedName) &&
-                    !eventThread.equals(simpleNotifyName) &&
-                    !eventThread.equals(simpleWaitName)) {
+            if (!eventThread.equals(interrupterThread.getName()) &&
+                    !eventThread.equals(interruptedThread.getName()) &&
+                    !eventThread.equals(simpleNotifyThread.getName()) &&
+                    !eventThread.equals(simpleWaitThread.getName())) {
                 continue;
             }
             if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
                 continue;
             }
-            if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+            if (!(event.getDuration().toMillis() >= MILLIS)) {
                 throw new Exception("Event is wrong duration.");
             }
 
@@ -146,14 +138,14 @@ public class TestJavaMonitorWaitInterrupt extends Test{
                 throw new Exception("Should not have timed out.");
             }
 
-            if (eventThread.equals(interruptedName)){
+            if (eventThread.equals(interruptedThread.getName())){
                 if (notifThread != null) {
                     throw new Exception("Notifier of interrupted thread should be null");
                 }
                 interruptedFound = true;
-            } else if (eventThread.equals(simpleWaitName)) {
-                if (!notifThread.equals(simpleNotifyName)) {
-                    throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyName);
+            } else if (eventThread.equals(simpleWaitThread.getName())) {
+                if (!notifThread.equals(simpleNotifyThread.getName())) {
+                    throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyThread.getName());
                 }
                 simpleWaitFound = true;
             }
@@ -164,20 +156,30 @@ public class TestJavaMonitorWaitInterrupt extends Test{
     }
 
     static class Helper {
-        public Thread interrupted;
+
         public synchronized void interrupted() throws InterruptedException {
             wait();
         }
 
-        public synchronized void interrupt() throws InterruptedException {
-            interrupted.interrupt();
+        public synchronized void interrupt() {
+            try {
+                Thread.sleep(MILLIS);
+                interruptedThread.interrupt();
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
         }
 
-        public synchronized void simpleWait() throws InterruptedException {
-            wait();
+        public synchronized void simpleWait() {
+            try {
+                wait();
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
         }
+
         public synchronized void simpleNotify() throws InterruptedException {
-            Thread.sleep(2*MILLIS);
+            Thread.sleep(MILLIS);
             notify();
         }
     }

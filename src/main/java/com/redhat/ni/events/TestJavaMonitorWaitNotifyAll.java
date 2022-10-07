@@ -29,17 +29,16 @@ import java.util.List;
 
 public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
     private static final int MILLIS = 50;
-    static String waiterName1;
-    static String waiterName2;
-    static String notifierName;
+    static final Helper helper = new Helper();
+    static Thread producerThread1;
+    static Thread producerThread2;
+    static Thread consumerThread;
+
     private boolean notifierFound = false;
     private int waitersFound = 0;
-
-    static Helper helper = new Helper();
-
     @Override
     public String getName() {
-        return "jdk.JavaMonitorWait - Notify All";
+        return "jdk.JavaMonitorWait";
     }
     @Override
     public void test() throws Exception {
@@ -49,14 +48,6 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
         try {
             recording.start();
 
-            Runnable consumer = () -> {
-                try {
-                    helper.consume();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
             Runnable producer = () -> {
                 try {
                     helper.produce();
@@ -64,24 +55,28 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
                     throw new RuntimeException(e);
                 }
             };
-            Thread tc1 = new Thread(consumer);
-            Thread tp1 = new Thread(producer);
-            Thread tp2 = new Thread(producer);
-            waiterName1 = tp1.getName();
-            waiterName2 = tp2.getName();
-            notifierName = tc1.getName();
 
+            producerThread1 = new Thread(producer);
+            producerThread2 = new Thread(producer);
+            Runnable consumer = () -> {
+                try {
+                    while (!producerThread1.getState().equals(Thread.State.WAITING) || !producerThread2.getState().equals(Thread.State.WAITING)) {
+                        Thread.sleep(10);
+                    }
+                    helper.consume();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            };
 
-            tp1.start();
-            tp2.start();
-            tc1.start();
+            consumerThread = new Thread(consumer);
+            consumerThread.start();
+            producerThread1.start();
+            producerThread2.start();
 
-            tp1.join();
-            tp2.join();
-            tc1.join();
-
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
+            consumerThread.join();
+            producerThread1.join();
+            producerThread2.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -91,24 +86,22 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
         List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
-                continue;
-            }
+
             String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
             String notifThread = struct.<RecordedThread>getValue("notifier") != null ? struct.<RecordedThread>getValue("notifier").getJavaName() : null;
-            if (!eventThread.equals(waiterName1) &&
-                    !eventThread.equals(waiterName2) &&
-                    !eventThread.equals(notifierName)) {
+            if (!eventThread.equals(producerThread1.getName()) &&
+                    !eventThread.equals(producerThread2.getName()) &&
+                    !eventThread.equals(consumerThread.getName())) {
                 continue;
             }
             if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
                 continue;
             }
-            if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
-                throw new Exception("Event is wrong duration.");
+            if (event.getDuration().toMillis() < MILLIS) {
+                throw new Exception("Event is wrong duration." + event.getDuration().toMillis());
             }
 
-            if (eventThread.equals(notifierName)) {
+            if (eventThread.equals(consumerThread.getName())) {
                 if (!struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should have timed out.");
                 }
@@ -117,7 +110,7 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
                 if (struct.<Boolean>getValue("timedOut").booleanValue()) {
                     throw new Exception("Should not have timed out.");
                 }
-                if (!notifThread.equals(notifierName)) {
+                if (!notifThread.equals(consumerThread.getName())) {
                     throw new Exception("Notifier thread name is incorrect");
                 }
                 waitersFound++;
@@ -135,9 +128,8 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
         }
 
         public synchronized void consume() throws InterruptedException {
-            //give the producers a headstart so they can start waiting
             wait(MILLIS);
-            notifyAll(); //should wake up both producers
+            notifyAll(); // should wake up both producers
         }
     }
 }

@@ -34,17 +34,67 @@ import java.util.List;
 
 public class TestJavaMonitorWaitTimeout extends Test {
     private static final int MILLIS = 50;
-    static Helper helper = new Helper();
-    static String timeOutName;
-    static String notifierName;
-    static String simpleWaitName;
-    static String simpleNotifyName;
+    static final Helper helper = new Helper();
+    static Thread unheardNotifierThread;
+    static Thread timeoutThread;
+
+    static Thread simpleWaitThread;
+    static Thread simpleNotifyThread;
     private boolean timeoutFound = false;
     private boolean simpleWaitFound = false;
 
     @Override
     public String getName() {
-        return "jdk.JavaMonitorWait - Time Out";
+        return "jdk.JavaMonitorWait";
+    }
+    private static void testTimeout() throws InterruptedException {
+        Runnable unheardNotifier = () -> {
+            helper.unheardNotify();
+        };
+
+        Runnable timouter = () -> {
+            try {
+                helper.timeout();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
+            }
+        };
+
+        unheardNotifierThread = new Thread(unheardNotifier);
+        timeoutThread = new Thread(timouter);
+
+        timeoutThread.start();
+        timeoutThread.join();
+
+        // wait for timeout before trying to notify
+        unheardNotifierThread.start();
+        unheardNotifierThread.join();
+
+    }
+
+    private static void testWaitNotify() throws Exception {
+        Runnable simpleWaiter = () -> {
+            helper.simpleWait();
+        };
+
+        Runnable simpleNotifier = () -> {
+            try {
+                while (!simpleWaitThread.getState().equals(Thread.State.WAITING)) {
+                    Thread.sleep(10);
+                }
+                helper.simpleNotify();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
+            }
+        };
+
+        simpleWaitThread = new Thread(simpleWaiter);
+        simpleNotifyThread = new Thread(simpleNotifier);
+
+        simpleWaitThread.start();
+        simpleNotifyThread.start();
+        simpleWaitThread.join();
+        simpleNotifyThread.join();
     }
     @Override
     public void test() throws Exception {
@@ -53,65 +103,8 @@ public class TestJavaMonitorWaitTimeout extends Test {
         recording.enable("jdk.JavaMonitorWait").withThreshold(Duration.ofMillis(1));
         try {
             recording.start();
-            Runnable unheardNotifier = () -> {
-                try {
-                    helper.unheardNotify();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
-            Runnable timouter = () -> {
-                try {
-                    helper.timeout();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
-            Runnable simpleWaiter = () -> {
-                try {
-                    helper.simpleWait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-
-            Runnable simpleNotifier = () -> {
-                try {
-                    helper.simpleNotify();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-            Thread unheardNotifierThread = new Thread(unheardNotifier);
-            Thread timeoutThread = new Thread(timouter);
-            timeOutName = timeoutThread.getName();
-            notifierName = unheardNotifierThread.getName();
-
-
-            timeoutThread.start();
-            Thread.sleep(10);
-            unheardNotifierThread.start();
-
-            timeoutThread.join();
-            unheardNotifierThread.join();
-
-            Thread tw = new Thread(simpleWaiter);
-            Thread tn = new Thread(simpleNotifier);
-            simpleWaitName = tw.getName();
-            simpleNotifyName = tn.getName();
-
-
-            tw.start();
-            Thread.sleep(10);
-            tn.start();
-
-            tw.join();
-            tn.join();
-
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
+            testTimeout();
+            testWaitNotify();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
@@ -121,24 +114,22 @@ public class TestJavaMonitorWaitTimeout extends Test {
         List<RecordedEvent> events = getEvents(recording, getName());
         for (RecordedEvent event : events) {
             RecordedObject struct = event;
-            if (!event.getEventType().getName().equals("jdk.JavaMonitorWait")) {
-                continue;
-            }
+
             String eventThread = struct.<RecordedThread>getValue("eventThread").getJavaName();
             String notifThread = struct.<RecordedThread>getValue("notifier") != null ? struct.<RecordedThread>getValue("notifier").getJavaName() : null;
-            if (!eventThread.equals(notifierName) &&
-                    !eventThread.equals(timeOutName) &&
-                    !eventThread.equals(simpleNotifyName) &&
-                    !eventThread.equals(simpleWaitName)) {
+            if (!eventThread.equals(unheardNotifierThread.getName()) &&
+                    !eventThread.equals(timeoutThread.getName()) &&
+                    !eventThread.equals(simpleNotifyThread.getName()) &&
+                    !eventThread.equals(simpleWaitThread.getName())) {
                 continue;
             }
             if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
                 continue;
             }
-            if (!isGreaterDuration(Duration.ofMillis(MILLIS), event.getDuration())) {
+            if (!(event.getDuration().toMillis() >= MILLIS-5)) {
                 throw new Exception("Event is wrong duration.");
             }
-            if (eventThread.equals(timeOutName)) {
+            if (eventThread.equals(timeoutThread.getName())) {
                 if (notifThread != null) {
                     throw new Exception("Notifier of timeout thread should be null");
                 }
@@ -146,9 +137,9 @@ public class TestJavaMonitorWaitTimeout extends Test {
                     throw new Exception("Should have timed out.");
                 }
                 timeoutFound = true;
-            } else if (eventThread.equals(simpleWaitName)) {
-                if (!notifThread.equals(simpleNotifyName)) {
-                    throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyName);
+            } else if (eventThread.equals(simpleWaitThread.getName())) {
+                if (!notifThread.equals(simpleNotifyThread.getName())) {
+                    throw new Exception("Notifier of simple wait is incorrect: "+ notifThread + " " +simpleNotifyThread.getName());
                 }
                 simpleWaitFound = true;
             }
@@ -164,17 +155,20 @@ public class TestJavaMonitorWaitTimeout extends Test {
             wait(MILLIS);
         }
 
-        public synchronized void unheardNotify() throws InterruptedException {
-            Thread.sleep(2*MILLIS);
-            //notify after timeout
+        public synchronized void unheardNotify() {
             notify();
         }
 
-        public synchronized void simpleWait() throws InterruptedException {
-            wait();
+        public synchronized void simpleWait() {
+            try {
+                wait();
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
         }
+
         public synchronized void simpleNotify() throws InterruptedException {
-            Thread.sleep(2*MILLIS);
+            Thread.sleep(MILLIS);
             notify();
         }
     }
