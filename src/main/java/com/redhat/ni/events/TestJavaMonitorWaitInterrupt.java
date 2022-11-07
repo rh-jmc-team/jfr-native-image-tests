@@ -49,7 +49,7 @@ public class TestJavaMonitorWaitInterrupt extends Test{
 
         Runnable interrupted = () -> {
             try {
-                helper.interrupted();
+                helper.interrupt(); // must enter first
                 throw new RuntimeException("Was not interrupted!!");
             } catch (InterruptedException e) {
                 // should get interrupted
@@ -59,32 +59,29 @@ public class TestJavaMonitorWaitInterrupt extends Test{
 
         Runnable interrupter = () -> {
             try {
-                while (!interruptedThread.getState().equals(Thread.State.WAITING)) {
-                    Thread.sleep(10);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException();
+                helper.interrupt();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            helper.interrupt();
         };
 
         interrupterThread = new Thread(interrupter);
         interruptedThread.start();
-        interrupterThread.start();
         interruptedThread.join();
         interrupterThread.join();
     }
 
     private static void testWaitNotify() throws Exception {
         Runnable simpleWaiter = () -> {
-            helper.simpleWait();
+            try {
+                helper.simpleNotify();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
+            }
         };
 
         Runnable simpleNotifier = () -> {
             try {
-                while (!simpleWaitThread.getState().equals(Thread.State.WAITING)) {
-                    Thread.sleep(10);
-                }
                 helper.simpleNotify();
             } catch (Exception e) {
                 throw new RuntimeException();
@@ -95,7 +92,6 @@ public class TestJavaMonitorWaitInterrupt extends Test{
         simpleNotifyThread = new Thread(simpleNotifier);
 
         simpleWaitThread.start();
-        simpleNotifyThread.start();
         simpleWaitThread.join();
         simpleNotifyThread.join();
     }
@@ -106,7 +102,6 @@ public class TestJavaMonitorWaitInterrupt extends Test{
         recording.enable("jdk.JavaMonitorWait").withThreshold(Duration.ofMillis(1));
         try {
             recording.start();
-
             testInterruption();
             testWaitNotify();
         } catch (InterruptedException e) {
@@ -156,31 +151,28 @@ public class TestJavaMonitorWaitInterrupt extends Test{
     }
 
     static class Helper {
+        public Thread interrupted;
 
-        public synchronized void interrupted() throws InterruptedException {
-            wait();
-        }
-
-        public synchronized void interrupt() {
-            try {
+        public synchronized void interrupt() throws InterruptedException {
+            if (Thread.currentThread().equals(interruptedThread)) {
+                // Ensure T1 enters critical section first
+                interrupterThread.start();
+                wait(); // allow T2 to enter section
+            } else if (Thread.currentThread().equals(interrupterThread)) {
+                // If T2 is in the critical section T1 is already waiting.
                 Thread.sleep(MILLIS);
                 interruptedThread.interrupt();
-            } catch (Exception e) {
-                throw new RuntimeException();
-            }
-        }
-
-        public synchronized void simpleWait() {
-            try {
-                wait();
-            } catch (Exception e) {
-                throw new RuntimeException();
             }
         }
 
         public synchronized void simpleNotify() throws InterruptedException {
-            Thread.sleep(MILLIS);
-            notify();
+            if (Thread.currentThread().equals(simpleWaitThread)) {
+                simpleNotifyThread.start();
+                wait();
+            } else if (Thread.currentThread().equals(simpleNotifyThread)) {
+                Thread.sleep(MILLIS);
+                notify();
+            }
         }
     }
 }

@@ -54,7 +54,12 @@ public class Tester
                 test = tests.get(testName);
                 if (test != null) {
                     System.out.println(test.getName());
-                    test.test();
+                    try {
+                        test.test();
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         }

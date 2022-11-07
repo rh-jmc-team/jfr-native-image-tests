@@ -125,7 +125,7 @@ public class TestJavaMonitorWait extends Test{
         }
 
 
-        if (abs(prodCount - consCount) > 1 || abs(consCount-COUNT) >1) {
+        if (abs(prodCount - consCount) > 1 || abs(consCount - COUNT) >1) {
             throw new Exception("Wrong number of events: "+prodCount + " "+consCount);
         }
 
@@ -135,7 +135,7 @@ public class TestJavaMonitorWait extends Test{
         private final int bufferSize = 1;
 
         public synchronized void produce() throws InterruptedException {
-            for (int i = 0; i< COUNT; i++) {
+            for (int i = 0; i < COUNT; i++) {
                 while (count >= bufferSize) {
                     wait();
                 }
@@ -146,7 +146,7 @@ public class TestJavaMonitorWait extends Test{
         }
 
         public synchronized void consume() throws InterruptedException {
-            for (int i = 0; i< COUNT; i++) {
+            for (int i = 0; i < COUNT; i++) {
                 while (count == 0) {
                     wait();
                 }

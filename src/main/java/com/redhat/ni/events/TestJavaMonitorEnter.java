@@ -19,7 +19,7 @@ import static java.lang.Math.abs;
 public class TestJavaMonitorEnter extends Test {
     private static final int MILLIS = 60;
 
-    static boolean inCritical = false;
+    static volatile boolean passedCheckpoint = false;
     static Thread firstThread;
     static Thread secondThread;
     static final Helper helper = new Helper();
@@ -35,10 +35,7 @@ public class TestJavaMonitorEnter extends Test {
 
         Runnable second = () -> {
             try {
-                // wait until lock is held
-                while (!inCritical) {
-                    Thread.sleep(10);
-                }
+                passedCheckpoint = true;
                 helper.doWork();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -53,7 +50,6 @@ public class TestJavaMonitorEnter extends Test {
         try {
             recording.start();
             firstThread.start();
-            secondThread.start();
 
             firstThread.join();
             secondThread.join();
@@ -86,19 +82,17 @@ public class TestJavaMonitorEnter extends Test {
 
     static class Helper {
         private synchronized void doWork() throws InterruptedException {
-            inCritical = true;
             if (Thread.currentThread().equals(secondThread)) {
-                inCritical = false;
                 return; // second thread doesn't need to do work.
             }
+            // ensure ordering of critical section entry
+            secondThread.start();
 
             // spin until second thread blocks
-            while (!secondThread.getState().equals(Thread.State.BLOCKED)) {
+            while (!secondThread.getState().equals(Thread.State.BLOCKED) || !passedCheckpoint) {
                 Thread.sleep(10);
             }
-
             Thread.sleep(MILLIS);
-            inCritical = false;
         }
     }
     @Override

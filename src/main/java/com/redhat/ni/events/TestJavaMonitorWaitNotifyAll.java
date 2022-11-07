@@ -50,30 +50,23 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
 
             Runnable producer = () -> {
                 try {
-                    helper.produce();
+                    helper.doWork();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             };
-
             producerThread1 = new Thread(producer);
             producerThread2 = new Thread(producer);
             Runnable consumer = () -> {
                 try {
-                    while (!producerThread1.getState().equals(Thread.State.WAITING) || !producerThread2.getState().equals(Thread.State.WAITING)) {
-                        Thread.sleep(10);
-                    }
-                    helper.consume();
+                    helper.doWork();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             };
 
             consumerThread = new Thread(consumer);
-            consumerThread.start();
             producerThread1.start();
-            producerThread2.start();
-
             consumerThread.join();
             producerThread1.join();
             producerThread2.join();
@@ -97,7 +90,7 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
             if (!struct.<RecordedClass>getValue("monitorClass").getName().equals(Helper.class.getName())) {
                 continue;
             }
-            if (event.getDuration().toMillis() < MILLIS) {
+            if (event.getDuration().toMillis() < MILLIS-1) { // -1 for tolerance
                 throw new Exception("Event is wrong duration." + event.getDuration().toMillis());
             }
 
@@ -123,13 +116,17 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
 
 
     static class Helper {
-        public synchronized void produce() throws InterruptedException {
-            wait();
-        }
-
-        public synchronized void consume() throws InterruptedException {
-            wait(MILLIS);
-            notifyAll(); // should wake up both producers
+        public synchronized void doWork() throws InterruptedException {
+            if (Thread.currentThread().equals(consumerThread)) {
+                wait(MILLIS);
+                notifyAll(); // should wake up both producers
+            } else if (Thread.currentThread().equals(producerThread1)){
+                producerThread2.start();
+                wait();
+            } else if (Thread.currentThread().equals(producerThread2)){
+                consumerThread.start();
+                wait();
+            }
         }
     }
 }

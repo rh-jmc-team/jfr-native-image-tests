@@ -74,16 +74,17 @@ public class TestJavaMonitorWaitTimeout extends Test {
 
     private static void testWaitNotify() throws Exception {
         Runnable simpleWaiter = () -> {
-            helper.simpleWait();
+            try {
+                helper.simpleNotify();
+            } catch (InterruptedException e) {
+                throw new RuntimeException();
+            }
         };
 
         Runnable simpleNotifier = () -> {
             try {
-                while (!simpleWaitThread.getState().equals(Thread.State.WAITING)) {
-                    Thread.sleep(10);
-                }
                 helper.simpleNotify();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 throw new RuntimeException();
             }
         };
@@ -92,7 +93,6 @@ public class TestJavaMonitorWaitTimeout extends Test {
         simpleNotifyThread = new Thread(simpleNotifier);
 
         simpleWaitThread.start();
-        simpleNotifyThread.start();
         simpleWaitThread.join();
         simpleNotifyThread.join();
     }
@@ -159,17 +159,14 @@ public class TestJavaMonitorWaitTimeout extends Test {
             notify();
         }
 
-        public synchronized void simpleWait() {
-            try {
-                wait();
-            } catch (Exception e) {
-                throw new RuntimeException();
-            }
-        }
-
         public synchronized void simpleNotify() throws InterruptedException {
-            Thread.sleep(MILLIS);
-            notify();
+            if (Thread.currentThread().equals(simpleWaitThread)) {
+                simpleNotifyThread.start();
+                wait();
+            } else if (Thread.currentThread().equals(simpleNotifyThread)) {
+                Thread.sleep(MILLIS);
+                notify();
+            }
         }
     }
 }

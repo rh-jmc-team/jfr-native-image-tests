@@ -41,8 +41,6 @@ public class TestThreadSleep extends Test {
             recording.start();
             sleepingThreadName = Thread.currentThread().getName();
             Thread.sleep(MILLIS);
-            // sleep so we know the event is recorded
-            Thread.sleep(500);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
