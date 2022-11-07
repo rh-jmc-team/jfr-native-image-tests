@@ -41,6 +41,10 @@ public class TestJavaMonitorWait extends Test{
         return "jdk.JavaMonitorWait";
     }
     @Override
+    public String getTestName(){
+        return getName();
+    }
+    @Override
     public void test() throws Exception {
 
         Recording recording = new Recording();

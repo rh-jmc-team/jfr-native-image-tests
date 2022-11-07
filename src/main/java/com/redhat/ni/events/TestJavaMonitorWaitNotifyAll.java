@@ -40,6 +40,11 @@ public class TestJavaMonitorWaitNotifyAll extends com.redhat.ni.tester.Test{
     public String getName() {
         return "jdk.JavaMonitorWait";
     }
+
+    @Override
+    public String getTestName(){
+        return getName()+ "_notify_all";
+    }
     @Override
     public void test() throws Exception {
 

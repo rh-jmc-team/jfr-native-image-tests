@@ -47,6 +47,10 @@ public class TestJavaMonitorWaitTimeout extends Test {
     public String getName() {
         return "jdk.JavaMonitorWait";
     }
+    @Override
+    public String getTestName(){
+        return getName()+ "_timeout";
+    }
     private static void testTimeout() throws InterruptedException {
         Runnable unheardNotifier = () -> {
             helper.unheardNotify();

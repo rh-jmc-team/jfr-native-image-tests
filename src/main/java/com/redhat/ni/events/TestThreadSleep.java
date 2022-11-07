@@ -69,4 +69,8 @@ public class TestThreadSleep extends Test {
     public String getName(){
         return "jdk.ThreadSleep";
     }
+    @Override
+    public String getTestName(){
+        return getName();
+    }
 }

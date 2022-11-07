@@ -110,4 +110,8 @@ public class TestThreadPark extends Test {
     public String getName(){
         return "jdk.ThreadPark";
     }
+    @Override
+    public String getTestName(){
+        return getName();
+    }
 }

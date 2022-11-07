@@ -73,10 +73,10 @@ public class Tester
     private static void loadTests() {
         tests.put("TestThreadPark", new TestThreadPark());
         tests.put("TestJavaMonitorEnter", new TestJavaMonitorEnter());
+        tests.put("TestThreadSleep", new TestThreadSleep());
         tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
         tests.put("TestJavaMonitorWaitInterrupt", new TestJavaMonitorWaitInterrupt());
         tests.put("TestJavaMonitorWaitNotifyAll", new TestJavaMonitorWaitNotifyAll());
         tests.put("TestJavaMonitorWaitTimeout", new TestJavaMonitorWaitTimeout());
-        tests.put("TestThreadSleep", new TestThreadSleep());
     }
 }

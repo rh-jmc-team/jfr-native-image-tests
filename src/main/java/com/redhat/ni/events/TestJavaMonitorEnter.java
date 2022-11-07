@@ -99,4 +99,8 @@ public class TestJavaMonitorEnter extends Test {
     public String getName() {
         return "jdk.JavaMonitorEnter";
     }
+    @Override
+    public String getTestName(){
+        return getName();
+    }
 }

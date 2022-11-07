@@ -45,6 +45,10 @@ public class TestJavaMonitorWaitInterrupt extends Test{
     public String getName() {
         return "jdk.JavaMonitorWait";
     }
+    @Override
+    public String getTestName(){
+        return getName()+ "_interrupt";
+    }
     private static void testInterruption() throws Exception {
 
         Runnable interrupted = () -> {

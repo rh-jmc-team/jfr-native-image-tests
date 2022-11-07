@@ -43,6 +43,9 @@ public class Test {
     }
 
     public String getName() {
+        return "Event has no name";
+    }
+    public String getTestName() {
         return "Test has no name";
     }
 
