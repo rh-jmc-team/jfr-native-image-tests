@@ -31,6 +31,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 public class TestThreadPark extends Test {
+    private static final int MILLIS = 500;
+    private static final int NANOS = MILLIS * 1000000;
+
+    static volatile boolean passedCheckpoint = false;
 
     class Blocker {
     }
@@ -46,16 +50,17 @@ public class TestThreadPark extends Test {
         try {
             recording.start();
 
-            LockSupport.parkNanos(500 * 1000000);
-            LockSupport.parkNanos(blocker, 500*1000000);
-            LockSupport.parkUntil(System.currentTimeMillis() + 500);
+            LockSupport.parkNanos(NANOS);
+            LockSupport.parkNanos(blocker, NANOS);
+            LockSupport.parkUntil(System.currentTimeMillis() + MILLIS);
 
             Runnable waiter = () -> {
+                passedCheckpoint = true;
                 LockSupport.park();
             };
             Thread waiterThread = new Thread(waiter);
             waiterThread.start();
-            while (!waiterThread.getState().equals(Thread.State.WAITING)) {
+            while (!waiterThread.getState().equals(Thread.State.WAITING) || !passedCheckpoint) {
                 Thread.sleep(10);
             }
             LockSupport.unpark(waiterThread);
@@ -72,7 +77,7 @@ public class TestThreadPark extends Test {
             if (struct.<Long>getValue("timeout") < 0 && struct.<Long>getValue("until") < 0) {
                 parkUnparkFound = true;
             } else{
-                if (!(struct.<Long>getValue("timeout").longValue() ==(500 * 1000000))) {
+                if (!(struct.<Long>getValue("timeout").longValue() ==(NANOS))) {
                     if (struct.<Long>getValue("timeout") < 0) {
                         parkUntilFound = true;
                         continue;
