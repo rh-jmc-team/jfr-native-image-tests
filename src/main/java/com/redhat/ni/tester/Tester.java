@@ -21,16 +21,7 @@
 
 package com.redhat.ni.tester;
 
-import com.redhat.ni.events.TestJavaMonitorWait;
-import com.redhat.ni.events.TestJavaMonitorWaitInterrupt;
-import com.redhat.ni.events.TestThreadPark;
-import com.redhat.ni.events.TestJavaMonitorEnter;
-import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
-import main.java.com.redhat.ni.events.TestJavaMonitorWaitTimeout;
-import main.java.com.redhat.ni.events.TestThreadSleep;
-
 import java.util.HashMap;
-import com.redhat.ni.tester.Test;
 
 /**
  * This is the class that loads and launches all the tests.
@@ -47,36 +38,42 @@ public class Tester
         System.out.println("Loading tests...");
         loadTests();
         System.out.println("Starting tests...");
-
+        int errors = 0;
         if (all) {
             Test test;
             for (String testName : tests.keySet()) {
                 test = tests.get(testName);
                 if (test != null) {
-                    System.out.println(test.getName());
+                    System.out.println(test.getTestName());
                     try {
                         test.test();
                     } catch (Exception e) {
+                        System.out.println("-----FAILED "+test.getTestName()+"-----");
                         System.out.println(e.getMessage());
                         e.printStackTrace();
+                        errors++;
                     }
                 }
             }
         }
 
-        System.out.println("If there were no exceptions, all tests PASSED.");
+        System.out.println("Errors:"+errors);
     }
 
     /**
      * If you create a new test, add it in this method.
      */
     private static void loadTests() {
-        tests.put("TestThreadPark", new TestThreadPark());
-        tests.put("TestJavaMonitorEnter", new TestJavaMonitorEnter());
-        tests.put("TestThreadSleep", new TestThreadSleep());
-        tests.put("TestJavaMonitorWait", new TestJavaMonitorWait());
-        tests.put("TestJavaMonitorWaitInterrupt", new TestJavaMonitorWaitInterrupt());
-        tests.put("TestJavaMonitorWaitNotifyAll", new TestJavaMonitorWaitNotifyAll());
-        tests.put("TestJavaMonitorWaitTimeout", new TestJavaMonitorWaitTimeout());
+        tests.put("TestThreadPark", new com.redhat.ni.events.TestThreadPark());
+        tests.put("TestJavaMonitorEnter", new com.redhat.ni.events.TestJavaMonitorEnter());
+        tests.put("TestThreadSleep", new com.redhat.ni.events.TestThreadSleep());
+        tests.put("TestJavaMonitorWait", new com.redhat.ni.events.TestJavaMonitorWait());
+        tests.put("TestJavaMonitorWaitInterrupt", new com.redhat.ni.events.TestJavaMonitorWaitInterrupt());
+        tests.put("TestJavaMonitorWaitNotifyAll", new com.redhat.ni.events.TestJavaMonitorWaitNotifyAll());
+        tests.put("TestJavaMonitorWaitTimeout", new com.redhat.ni.events.TestJavaMonitorWaitTimeout());
+        tests.put("TestStreaming", new com.redhat.ni.streaming.TestStreaming());
+        tests.put("TestStreamingChunkRotation", new com.redhat.ni.streaming.TestStreamingChunkRotation());
+        tests.put("TestStreamingEventCount",new com.redhat.ni.streaming.TestStreamingEventCount());
+        tests.put("StressTest",new com.redhat.ni.streaming.TestStress());
     }
 }

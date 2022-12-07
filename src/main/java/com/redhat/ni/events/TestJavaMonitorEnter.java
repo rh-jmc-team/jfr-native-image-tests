@@ -5,7 +5,6 @@ import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedObject;
 import jdk.jfr.consumer.RecordedThread;
-import main.java.com.redhat.ni.tester.Stressor;
 
 import java.time.Duration;
 import java.util.ArrayList;

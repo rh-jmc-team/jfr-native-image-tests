@@ -28,7 +28,6 @@ import jdk.jfr.consumer.*;
 import java.time.Duration;
 import java.util.List;
 import com.redhat.ni.tester.Test;
-import main.java.com.redhat.ni.events.TestJavaMonitorWaitNotifyAll;
 
 public class TestJavaMonitorWaitInterrupt extends Test{
     private static final int MILLIS = 50;

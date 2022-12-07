@@ -68,12 +68,15 @@ public class Test {
         }
     }
 
-    protected List<RecordedEvent> getEvents(Recording recording, String testName) throws IOException {
-        Path p = makeCopy(recording, testName);
+    protected List<RecordedEvent> getEvents(Recording recording, String eventName) throws IOException {
+        Path p = makeCopy(recording, eventName);
+        return getEvents(p, eventName);
+    }
+    protected List<RecordedEvent> getEvents(Path p, String eventName) throws IOException{
         List<RecordedEvent> events = RecordingFile.readAllEvents(p);
         Collections.sort(events, chronologicalComparator);
         // remove events that are not in the list of tested events
-        events.removeIf(event -> (!testName.equals(event.getEventType().getName())));
+        events.removeIf(event -> (!eventName.equals(event.getEventType().getName())));
         Files.deleteIfExists(p);
         return events;
     }

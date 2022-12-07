@@ -19,7 +19,7 @@
  * along with the suite.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main.java.com.redhat.ni.events;
+package com.redhat.ni.events;
 
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.*;

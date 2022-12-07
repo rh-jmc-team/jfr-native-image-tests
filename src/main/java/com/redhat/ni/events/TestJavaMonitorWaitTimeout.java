@@ -19,7 +19,7 @@
  * along with the suite.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main.java.com.redhat.ni.events;
+package com.redhat.ni.events;
 
 import com.redhat.ni.tester.Test;
 import com.redhat.ni.tester.Tester;
