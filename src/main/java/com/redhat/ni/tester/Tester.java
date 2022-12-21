@@ -75,5 +75,6 @@ public class Tester
         tests.put("TestStreamingChunkRotation", new com.redhat.ni.streaming.TestStreamingChunkRotation());
         tests.put("TestStreamingEventCount",new com.redhat.ni.streaming.TestStreamingEventCount());
         tests.put("StressTest",new com.redhat.ni.streaming.TestStress());
+        tests.put("TestObjectAllocationInNewTLAB", new com.redhat.ni.events.TestObjectAllocationInNewTLAB());
     }
 }
