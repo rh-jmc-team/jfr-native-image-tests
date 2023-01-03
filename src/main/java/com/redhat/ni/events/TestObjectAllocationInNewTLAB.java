@@ -95,9 +95,7 @@ public class TestObjectAllocationInNewTLAB extends Test {
             } else if (event.<Long>getValue("allocationSize").longValue() >= KILO
                     && event.<Long>getValue("tlabSize").longValue() == (DEFAULT_ALIGNED_HEAP_CHUNK_SIZE)
                     && event.<RecordedClass> getValue("objectClass").getName().equals(byte[].class.getName())) {
-
                      foundSmallByte = true;
-
             } else if (event.<Long>getValue("tlabSize").longValue() == (DEFAULT_ALIGNED_HEAP_CHUNK_SIZE)
                     && event.<RecordedClass> getValue("objectClass").getName().equals(Helper.class.getName())) {
                 foundInstance = true;
