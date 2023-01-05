@@ -76,5 +76,6 @@ public class Tester
         tests.put("TestStreamingEventCount",new com.redhat.ni.streaming.TestStreamingEventCount());
         tests.put("StressTest",new com.redhat.ni.streaming.TestStress());
         tests.put("TestObjectAllocationInNewTLAB", new com.redhat.ni.events.TestObjectAllocationInNewTLAB());
+        tests.put("TestJavaMonitorInflate", new com.redhat.ni.events.TestJavaMonitorInflate());
     }
 }
