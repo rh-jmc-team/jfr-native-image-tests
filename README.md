@@ -1,6 +1,6 @@
 # jfr-native-image-tests
-The goal of this repository is to provide a test suite is to test JFR events in native images. It helps to run multiple tests at once and
-automatically analyze output JFR files. This is useful for test driven development, as well as regression testing.
+The goal of this repository is to provide a test suite for JFR events in native images. It helps run multiple tests at once and
+automatically analyze the output JFR files. This is useful for test driven development, as well as regression testing.
 
 ### Usage:
 1. Compile to bytecode.
@@ -17,7 +17,7 @@ automatically analyze output JFR files. This is useful for test driven developme
    
     `./com.redhat.ni.tester.tester`
 
-Exceptions will be thrown where tests fail.
+Exceptions will be thrown where tests fail. Once all test have been run the numebr of failed tests is printed. 
 
 ### Creating new tests
 Add new event tests under the "events" directory. All tests should extend `com.redhat.ni.tester.Test` class.
